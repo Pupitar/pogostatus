@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>{{app_config["app"]["page_name"]}} - Status Page</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css" integrity="sha512-EZLkOqwILORob+p0BXZc+Vm3RgJBOe1Iq/0fiI7r/wJgzOFZMlsqTa29UEl6v6U6gsV4uIpsNZoV32YZqrCRCQ==" crossorigin="anonymous" />
+  <meta http-equiv="Refresh" content="{{app_config["app"]["auto_refresh"]}}">
+
+  <style>
+    .container { width: 100%; }
+    .header { margin-top: 6rem; text-align: center; }
+    .docs-header { text-transform: uppercase; font-size: 1.4rem; letter-spacing: .2rem; font-weight: 600; }
+    .red_text { color: #cc0000; }
+    .down_text { color: #800000; }
+    .yellow_text { color: #e0b534; }
+    .green_text { color: #00b500; }
+    .bold { font-weight: bold; }
+    .status_tr { min-width: 95px; }
+    #uptime { text-align: center; }
+    li { margin-bottom: 0.5rem; }
+    h6 { margin-bottom: 1.2rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="header">
+      {% if app_config["app"]["page_img"] %}
+        <img src="{{app_config["app"]["page_img"]}}" width="{{app_config["app"]["page_img_width"]}}" height="{{app_config["app"]["page_img_height"]}}">
+      {% endif %}
+      <h3 class="title">{{app_config["app"]["page_name"]}} - Status Page</h3>
+    </section>
+    <div class="content" id="main">
+      <div class="row">
+        <section class="header">
+          <h5 class="table-title">Services Status</h5>
+        </section>
+        <table class="u-full-width">
+          <thead>
+            <tr>
+              <th>Service Name</th>
+              <th>Last Interaction</th>
+              <th class="status_tr">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Restart Service</td>
+              <td>{{last_api_check}} sec ago</td>
+              <td>
+              {# move this logic out of template... #}
+                {% if last_api_check <= app_config["timeout"]["green"] %}
+                <span class="green_text bold">OK</span>
+                {% elif last_api_check <= app_config["timeout"]["yellow"] %}
+                <span class="yellow_text bold">WARNING</span>
+                {% else %}
+                <span class="down_text bold">DOWN</span>
+                {% endif %}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <section class="header">
+          <h5 class="table-title">Scanners Status</h5>
+        </section>
+        <table class="u-full-width">
+          <thead>
+            <tr>
+              <th>Device Name</th>
+              <th>Last Interaction</th>
+              <th>Instance Name</th>
+              <th class="status_tr">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for device, device_data in devices.items() %}
+            <tr>
+              <td>{{device}}</td>
+              <td>{{device_data["last_seen"]}} sec ago</td>
+              <td>{{device_data["instance_name"]}}</td>
+              <td>
+              {# move this logic out of template... #}
+              {% if device_data["last_seen"] <= app_config["timeout"]["green"] %}
+                <span class="green_text bold">OK</span>
+              {% elif device_data["last_seen"] <= app_config["timeout"]["yellow"] %}
+                <span class="yellow_text bold">WARNING</span>
+              {% elif device_data["last_seen"] <= app_config["timeout"]["red"] %}
+                <span class="red_text bold">RESTARTING</span>
+              {% else %}
+                <span class="down_text bold">DOWN</span>
+              {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="content" id="footer">
+      <div class="row">
+        <h6 class="docs-header">Legend</h6>
+        <ul>
+          <li><span class="green_text bold">Green</span> less than {{app_config["timeout"]["green"]}} seconds of inactivity. Everything is okay.</li>
+          <li><span class="yellow_text bold">Yellow</span> less than {{app_config["timeout"]["yellow"]}} seconds of inactivity. After this time Restart Service should restart device.</li>
+          <li><span class="red_text bold">Red</span> less than {{app_config["timeout"]["red"]}} seconds of inactivity. At this time we are waiting for restarted device.</li>
+          <li><span class="down_text bold">Dark Red</span> scanner is most likely down and problem was reported to owner.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="content" id="uptime">
+      <p>
+        Uptime: {{status_uptime}}
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>

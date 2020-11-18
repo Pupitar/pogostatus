@@ -1,0 +1,48 @@
+app:
+  bind: 127.0.0.1
+  port: 8093
+  api_key: mysecretkey
+  page_name: POGO Awesome
+  page_img:
+  page_img_width: 180
+  page_img_height: 180
+  auto_refresh: 30
+
+timeout:
+  green: 100
+  yellow: 300
+  red: 500
+
+# Public pages configuration
+# `public_enabled` - enable public view, when false return 404 not found
+# `hidden_enabled` - same as above but "hidden" view
+# `hidden_name` - can't be none! to disable use `hidden_enabled` it's https://example.com/THISPART
+pages:
+  public_enabled: true
+  hidden_enabled: true
+  hidden_name: hidden
+
+# Used to hide devices/instances starting with names provided in list from public view
+ignore:
+  hidden_device_pattern:
+    - test
+  hidden_instance_pattern:
+    - test_instance
+
+# Replace X to Y in device/instance names. Order matter.
+device_name_overwrite:
+  - ["dev", "Scanner #"]
+
+instance_name_overwrite:
+
+rdm_database:
+  host: 127.0.0.1
+  user: device_status
+  password: mysecretpassword
+  name: rdm
+
+dcm_database:
+  host: 127.0.0.1
+  user: device_status
+  password: mysecretpassword
+  name: dcm
