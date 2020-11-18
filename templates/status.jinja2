@@ -70,7 +70,9 @@
               {% if app_config["pages"]["public_show_devices"] %}
                 <th>Device Name</th>
               {% endif %}
-              <th>Last Interaction</th>
+              {% if app_config["pages"]["public_show_interaction"] %}
+                <th>Last Interaction</th>
+              {% endif %}
               {% if app_config["pages"]["public_show_instances"] %}
                 <th>Instance Name</th>
               {% endif %}
@@ -83,7 +85,9 @@
               {% if app_config["pages"]["public_show_devices"] %}
                 <td>{{device}}</td>
               {% endif %}
-              <td>{{device_data["last_seen"]}} sec ago</td>
+              {% if app_config["pages"]["public_show_interaction"] %}
+                <td>{{device_data["last_seen"]}} sec ago</td>
+              {% endif %}
               {% if app_config["pages"]["public_show_instances"] %}
                 <td>{{device_data["instance_name"]}}</td>
               {% endif %}

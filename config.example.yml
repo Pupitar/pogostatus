@@ -19,8 +19,9 @@ pages:
   public_enabled: true  # enable public view
   public_show_devices: true  # show Device Name column on public view
   public_show_instances: true  # show Device Name column on public view
+  public_show_interaction: true  # show Last Interaction column on public view
   hidden_enabled: true  # same as above but "hidden" view
-  hidden_name: hidden  # can't be none! to disable use `hidden_enabled` it's https://example.com/THISPART
+  hidden_name: pikachu  # can't be none! to disable use `hidden_enabled` it's https://example.com/THISPART
   show_legend: true
 
 # Used to hide devices/instances starting with names provided in list from public view
