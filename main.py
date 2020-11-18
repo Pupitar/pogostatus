@@ -1,6 +1,6 @@
 import time
 import yaml
-import MySQLdb
+import MySQLdb as msd
 import pyramid.httpexceptions as exc
 
 from threading import Lock
@@ -106,7 +106,7 @@ def fetch_sql_data(data_type):
 
     try:
         if data_type == "rdm":
-            con = MySQLdb.connect(
+            con = msd.connect(
                 app_config["rdm_database"]["host"], app_config["rdm_database"]["user"],
                 app_config["rdm_database"]["password"], app_config["rdm_database"]["name"],
             )
@@ -120,7 +120,7 @@ def fetch_sql_data(data_type):
                 } for n in cur.fetchall()
             }
         elif data_type == "dcm":
-            con = MySQLdb.connect(
+            con = msd.connect(
                 app_config["dcm_database"]["host"], app_config["dcm_database"]["user"],
                 app_config["dcm_database"]["password"], app_config["dcm_database"]["name"],
             )
