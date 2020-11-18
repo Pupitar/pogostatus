@@ -7,7 +7,7 @@
 
 ## Getting Started
 
-1. Clone `git clone https://github.com/lenisko/pogostatus && cd pogostatus` repository and enter directory
+1. Clone `git clone https://github.com/lenisko/pogostatus.git && cd pogostatus` repository and enter directory
 2. Copy config template `cp config.example.yml config.yml`
 3. Make changes in `config.yml`
 4. Create python3 virtualenv `virtualenv -p python3 env`
