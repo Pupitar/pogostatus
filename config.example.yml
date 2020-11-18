@@ -13,14 +13,15 @@ timeout:
   yellow: 300
   red: 500
 
-# Public pages configuration
-# `public_enabled` - enable public view, when false return 404 not found
-# `hidden_enabled` - same as above but "hidden" view
-# `hidden_name` - can't be none! to disable use `hidden_enabled` it's https://example.com/THISPART
+# Pages configuration
 pages:
-  public_enabled: true
-  hidden_enabled: true
-  hidden_name: hidden
+  show_services_table: true
+  public_enabled: true  # enable public view
+  public_show_devices: true  # show Device Name column on public view
+  public_show_instances: true  # show Device Name column on public view
+  hidden_enabled: true  # same as above but "hidden" view
+  hidden_name: hidden  # can't be none! to disable use `hidden_enabled` it's https://example.com/THISPART
+  show_legend: true
 
 # Used to hide devices/instances starting with names provided in list from public view
 ignore:

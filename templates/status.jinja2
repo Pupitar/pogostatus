@@ -30,34 +30,36 @@
     </section>
     <div class="content" id="main">
       <div class="row">
-        <section class="header">
-          <h5 class="table-title">Services Status</h5>
-        </section>
-        <table class="u-full-width">
-          <thead>
-            <tr>
-              <th>Service Name</th>
-              <th>Last Interaction</th>
-              <th class="status_tr">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Restart Service</td>
-              <td>{{last_api_check}} sec ago</td>
-              <td>
-              {# move this logic out of template... #}
-                {% if last_api_check <= app_config["timeout"]["green"] %}
-                <span class="green_text bold">OK</span>
-                {% elif last_api_check <= app_config["timeout"]["yellow"] %}
-                <span class="yellow_text bold">WARNING</span>
-                {% else %}
-                <span class="down_text bold">DOWN</span>
-                {% endif %}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        {% if app_config["pages"]["show_services_table"] %}
+          <section class="header">
+            <h5 class="table-title">Services Status</h5>
+          </section>
+          <table class="u-full-width">
+            <thead>
+              <tr>
+                <th>Service Name</th>
+                <th>Last Interaction</th>
+                <th class="status_tr">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Restart Service</td>
+                <td>{{last_api_check}} sec ago</td>
+                <td>
+                {# move this logic out of template... #}
+                  {% if last_api_check <= app_config["timeout"]["green"] %}
+                  <span class="green_text bold">OK</span>
+                  {% elif last_api_check <= app_config["timeout"]["yellow"] %}
+                  <span class="yellow_text bold">WARNING</span>
+                  {% else %}
+                  <span class="down_text bold">DOWN</span>
+                  {% endif %}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        {% endif %}
 
         <section class="header">
           <h5 class="table-title">Scanners Status</h5>
@@ -65,18 +67,26 @@
         <table class="u-full-width">
           <thead>
             <tr>
-              <th>Device Name</th>
+              {% if app_config["pages"]["public_show_devices"] %}
+                <th>Device Name</th>
+              {% endif %}
               <th>Last Interaction</th>
-              <th>Instance Name</th>
+              {% if app_config["pages"]["public_show_instances"] %}
+                <th>Instance Name</th>
+              {% endif %}
               <th class="status_tr">Status</th>
             </tr>
           </thead>
           <tbody>
             {% for device, device_data in devices.items() %}
             <tr>
-              <td>{{device}}</td>
+              {% if app_config["pages"]["public_show_devices"] %}
+                <td>{{device}}</td>
+              {% endif %}
               <td>{{device_data["last_seen"]}} sec ago</td>
-              <td>{{device_data["instance_name"]}}</td>
+              {% if app_config["pages"]["public_show_instances"] %}
+                <td>{{device_data["instance_name"]}}</td>
+              {% endif %}
               <td>
               {# move this logic out of template... #}
               {% if device_data["last_seen"] <= app_config["timeout"]["green"] %}
@@ -96,17 +106,19 @@
       </div>
     </div>
 
-    <div class="content" id="footer">
-      <div class="row">
-        <h6 class="docs-header">Legend</h6>
-        <ul>
-          <li><span class="green_text bold">Green</span> less than {{app_config["timeout"]["green"]}} seconds of inactivity. Everything is okay.</li>
-          <li><span class="yellow_text bold">Yellow</span> less than {{app_config["timeout"]["yellow"]}} seconds of inactivity. After this time Restart Service should restart device.</li>
-          <li><span class="red_text bold">Red</span> less than {{app_config["timeout"]["red"]}} seconds of inactivity. At this time we are waiting for restarted device.</li>
-          <li><span class="down_text bold">Dark Red</span> scanner is most likely down and problem was reported to owner.</li>
-        </ul>
+    {% if app_config["pages"]["show_legend"] %}
+      <div class="content" id="footer">
+        <div class="row">
+          <h6 class="docs-header">Legend</h6>
+          <ul>
+            <li><span class="green_text bold">Green</span> less than {{app_config["timeout"]["green"]}} seconds of inactivity. Everything is okay.</li>
+            <li><span class="yellow_text bold">Yellow</span> less than {{app_config["timeout"]["yellow"]}} seconds of inactivity. After this time Restart Service should restart device.</li>
+            <li><span class="red_text bold">Red</span> less than {{app_config["timeout"]["red"]}} seconds of inactivity. At this time we are waiting for restarted device.</li>
+            <li><span class="down_text bold">Dark Red</span> scanner is most likely down and problem was reported to owner.</li>
+          </ul>
+        </div>
       </div>
-    </div>
+    {% endif %}
 
     <div class="content" id="uptime">
       <p>
