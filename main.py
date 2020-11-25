@@ -102,7 +102,7 @@ def get_pub_data(hidden=False):
 
 
 def fetch_sql_data(data_type):
-    output = {}
+    con, output = None, {}
 
     try:
         if data_type == "rdm":
@@ -112,13 +112,23 @@ def fetch_sql_data(data_type):
             )
             cur = con.cursor()
 
-            cur.execute("SELECT uuid, UNIX_TIMESTAMP() - last_seen, instance_name FROM device ORDER BY `uuid` ASC;")
+            cur.execute("""
+                SELECT
+                    uuid, UNIX_TIMESTAMP() - last_seen, last_seen, instance_name
+                FROM device
+                ORDER BY `uuid` ASC
+            """)
+
             output = {
                 n[0]: {
-                    "last_seen": n[1],
-                    "instance_name": n[2]
+                    "last_seen_from_now": n[1],
+                    "last_seen": n[2],
+                    "instance_name": n[3]
                 } for n in cur.fetchall()
             }
+
+            con.close()
+
         elif data_type == "dcm":
             con = msd.connect(
                 app_config["dcm_database"]["host"], app_config["dcm_database"]["user"],
@@ -126,23 +136,28 @@ def fetch_sql_data(data_type):
             )
             cur = con.cursor()
 
-            cur.execute("SELECT uuid, UNIX_TIMESTAMP() - last_seen, model, ios_version, ipa_version, enabled FROM `devices` ORDER BY `uuid` ASC;")
+            cur.execute("""
+                SELECT
+                    uuid, UNIX_TIMESTAMP() - last_seen, last_seen, model, ios_version, ipa_version, enabled
+                FROM `devices`
+                ORDER BY `uuid` ASC
+            """)
+
             output = {
                 n[0]: {
-                    "last_heartbeat": n[1],
-                    "model": n[2],
-                    "ios_version": n[3],
-                    "ipa_version": n[4],
-                    "enabled": n[5],
+                    "last_heartbeat_from_now": n[1],
+                    "last_heartbeat": n[2],
+                    "model": n[3],
+                    "ios_version": n[4],
+                    "ipa_version": n[5],
+                    "enabled": n[6],
                 } for n in cur.fetchall()
             }
 
+            con.close()
+
     except Exception:
         return output
-
-    finally:
-        if con:
-            con.close()
 
     return output
 

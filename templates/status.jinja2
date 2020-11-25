@@ -86,18 +86,18 @@
                 <td>{{device}}</td>
               {% endif %}
               {% if app_config["pages"]["public_show_interaction"] %}
-                <td>{{device_data["last_seen"]}} sec ago</td>
+                <td>{{device_data["last_seen_from_now"]}} sec ago</td>
               {% endif %}
               {% if app_config["pages"]["public_show_instances"] %}
                 <td>{{device_data["instance_name"]}}</td>
               {% endif %}
               <td>
               {# move this logic out of template... #}
-              {% if device_data["last_seen"] <= app_config["timeout"]["green"] %}
+              {% if device_data["last_seen_from_now"] <= app_config["timeout"]["green"] %}
                 <span class="green_text bold">OK</span>
-              {% elif device_data["last_seen"] <= app_config["timeout"]["yellow"] %}
+              {% elif device_data["last_seen_from_now"] <= app_config["timeout"]["yellow"] %}
                 <span class="yellow_text bold">WARNING</span>
-              {% elif device_data["last_seen"] <= app_config["timeout"]["red"] %}
+              {% elif device_data["last_seen_from_now"] <= app_config["timeout"]["red"] %}
                 <span class="red_text bold">RESTARTING</span>
               {% else %}
                 <span class="down_text bold">DOWN</span>
