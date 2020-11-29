@@ -38,10 +38,18 @@ device_name_overwrite:
 instance_name_overwrite:
 
 rdm_database:
+  enabled: true  # false not supported yet :D
   host: 127.0.0.1
   user: device_status
   password: mysecretpassword
   name: rdm
+
+lorg_database:
+  enabled: false
+  host: 127.0.0.1
+  user: xxxx
+  password: xxxx
+  name: xxxx
 
 dcm_database:
   host: 127.0.0.1

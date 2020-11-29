@@ -1,17 +1,16 @@
-import time
-import yaml
 import MySQLdb as msd
 import pyramid.httpexceptions as exc
-
+import time
+import yaml
+from pyramid.config import Configurator
+from pyramid.renderers import render_to_response
+from pyramid.response import Response
+from pyramid.view import view_config, forbidden_view_config, notfound_view_config
 from threading import Lock
 from wsgiref.simple_server import make_server
-from pyramid.config import Configurator
-from pyramid.view import view_config, forbidden_view_config, notfound_view_config
-from pyramid.response import Response
-from pyramid.renderers import render_to_response
 
 
-class ApiCheckTimer(object):
+class PokeTimer(object):
     def __init__(self, timeouts, Lock=Lock):
         self.last_api_check = int(time.time())
         self.boot_time = int(time.time())
@@ -42,6 +41,27 @@ class ApiCheckTimer(object):
 
     def sec_from_last(self):
         return int(time.time()) - self.last_api_check
+
+
+class PokeDB:
+    def __init__(self, db_type):
+        self.con = msd.connect(
+            host=app_config[db_type]["host"],
+            user=app_config[db_type]["user"],
+            passwd=app_config[db_type]["password"],
+            db=app_config[db_type]["name"],
+            connect_timeout=app_config[db_type]["connect_timeout"],
+        )
+        self.cursor = self.con.cursor()
+
+    def execute(self, query):
+        self.cursor.execute(query)
+
+    def fetchall(self):
+        return self.cursor.fetchall()
+
+    def close(self):
+        self.con.close()
 
 
 @forbidden_view_config(renderer='json')
@@ -102,17 +122,37 @@ def get_pub_data(hidden=False):
 
 
 def fetch_sql_data(data_type):
-    con, output = None, {}
+    output = {}
 
     try:
-        if data_type == "rdm":
-            con = msd.connect(
-                app_config["rdm_database"]["host"], app_config["rdm_database"]["user"],
-                app_config["rdm_database"]["password"], app_config["rdm_database"]["name"],
-            )
-            cur = con.cursor()
+        if data_type == "dcm":
+            db = PokeDB("dcm_database")
+            db.execute("""
+                SELECT
+                    uuid, UNIX_TIMESTAMP() - last_seen, last_seen, model,
+                    ios_version, ipa_version, enabled, exclude_reboots
+                FROM `devices`
+                WHERE enabled = 1
+                ORDER BY `uuid` ASC
+            """)
 
-            cur.execute("""
+            output = {
+                n[0]: {
+                    "dcm_heartbeat_from_now": n[1],
+                    "dcm_heartbeat": n[2],
+                    "model": n[3],
+                    "ios_version": n[4],
+                    "ipa_version": n[5],
+                    "enabled": n[6],
+                    "exclude_reboots": n[7],
+                } for n in db.fetchall()
+            }
+
+            db.close()
+
+        elif data_type == "rdm":
+            db = PokeDB("rdm_database")
+            db.execute("""
                 SELECT
                     uuid, UNIX_TIMESTAMP() - last_seen, last_seen, instance_name
                 FROM device
@@ -124,37 +164,29 @@ def fetch_sql_data(data_type):
                     "last_seen_from_now": n[1],
                     "last_seen": n[2],
                     "instance_name": n[3]
-                } for n in cur.fetchall()
+                } for n in db.fetchall()
             }
 
-            con.close()
+            db.close()
 
-        elif data_type == "dcm":
-            con = msd.connect(
-                app_config["dcm_database"]["host"], app_config["dcm_database"]["user"],
-                app_config["dcm_database"]["password"], app_config["dcm_database"]["name"],
-            )
-            cur = con.cursor()
-
-            cur.execute("""
+        elif data_type == "lorg":
+            db = PokeDB("lorg_database")
+            db.execute("""
                 SELECT
-                    uuid, UNIX_TIMESTAMP() - last_seen, last_seen, model, ios_version, ipa_version, enabled
-                FROM `devices`
-                ORDER BY `uuid` ASC
+                    device_id, UNIX_TIMESTAMP() - updated, updated, instance
+                FROM `accounts`
+                WHERE device_id is not NULL
             """)
 
             output = {
                 n[0]: {
-                    "last_heartbeat_from_now": n[1],
-                    "last_heartbeat": n[2],
-                    "model": n[3],
-                    "ios_version": n[4],
-                    "ipa_version": n[5],
-                    "enabled": n[6],
-                } for n in cur.fetchall()
+                    "last_seen_from_now": n[1],
+                    "last_seen": n[2],
+                    "instance_name": n[3]
+                } for n in db.fetchall()
             }
 
-            con.close()
+            db.close()
 
     except Exception:
         return output
@@ -169,14 +201,28 @@ def api(request):
         raise exc.HTTPForbidden()
 
     request.registry.api_check_timer.set_now()
+    rdm_status_dict, lorg_status_dict = None, None
 
-    rdm_status_dict = fetch_sql_data("rdm")
+    # main query
     dcm_status_dict = fetch_sql_data("dcm")
+
+    if app_config["rdm_database"]["enabled"]:
+        rdm_status_dict = fetch_sql_data("rdm")
+
+    if app_config["lorg_database"]["enabled"]:
+        lorg_status_dict = fetch_sql_data("lorg")
 
     output_dict = {"devices": {}, "status": False}
 
-    for device_name, device_data in rdm_status_dict.items():
-        output_dict["devices"][device_name] = dict(device_data, **dcm_status_dict[device_name])
+    for device_name, device_data in dcm_status_dict.items():
+        # hmm... there could be cooldown after swapping accounts between backends - keep in mind
+        if rdm_status_dict and device_name in rdm_status_dict.keys():
+            output_dict["devices"][device_name] = dict(device_data, **rdm_status_dict[device_name])
+            output_dict["devices"][device_name]["source"] = 1
+
+        elif lorg_status_dict and device_name in lorg_status_dict.keys():
+            output_dict["devices"][device_name] = dict(device_data, **lorg_status_dict[device_name])
+            output_dict["devices"][device_name]["source"] = 2
 
     if output_dict["devices"]:
         output_dict["status"] = True
@@ -220,7 +266,7 @@ if __name__ == '__main__':
         config.add_route('api', '/api')
         config.add_route('status_all', '/' + app_config["pages"]["hidden_name"])
         config.scan()
-        config.registry.api_check_timer = ApiCheckTimer(timeouts=app_config["timeout"])
+        config.registry.api_check_timer = PokeTimer(timeouts=app_config["timeout"])
         app = config.make_wsgi_app()
 
     server = make_server(
