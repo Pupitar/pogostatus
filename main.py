@@ -64,7 +64,7 @@ class PokeDB:
         return self.cursor.fetchall()
 
     def fetch_row(self):
-        return self.cursor.fetch_row()
+        return self.cursor.fetchone()
 
     def close(self):
         self.con.close()
