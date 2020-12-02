@@ -1,5 +1,6 @@
 import MySQLdb as msd
 import pyramid.httpexceptions as exc
+import sys
 import time
 import yaml
 from pyramid.config import Configurator
@@ -8,6 +9,8 @@ from pyramid.response import Response
 from pyramid.view import view_config, forbidden_view_config, notfound_view_config
 from threading import Lock
 from wsgiref.simple_server import make_server
+
+required_dcm_db = 14
 
 
 class PokeTimer(object):
@@ -60,6 +63,9 @@ class PokeDB:
     def fetchall(self):
         return self.cursor.fetchall()
 
+    def fetch_row(self):
+        return self.cursor.fetch_row()
+
     def close(self):
         self.con.close()
 
@@ -86,6 +92,16 @@ def is_hidden(device_name, instance_name):
         for hidden_instance
         in app_config["ignore"]["hidden_instance_pattern"]
     ])
+
+
+def init_check():
+    db = PokeDB("dcm_database")
+    db.execute("SELECT `value` FROM `metadata` WHERE `key` = 'DB_VERSION';")
+    dcm_version = int(db.fetch_row()[0])
+
+    if required_dcm_db > dcm_version:
+        log.error(f"Supported DCM db schema: {required_dcm_db}")
+        sys.exit(1)
 
 
 def name_overwrite(device_name, instance_name):
@@ -130,7 +146,7 @@ def fetch_sql_data(data_type):
             db.execute("""
                 SELECT
                     uuid, UNIX_TIMESTAMP() - last_seen, last_seen, model,
-                    ios_version, ipa_version, enabled, exclude_reboots
+                    ios_version, ipa_version, enabled, exclude_reboots, clientip
                 FROM `devices`
                 WHERE enabled = 1
                 ORDER BY `uuid` ASC
@@ -145,6 +161,7 @@ def fetch_sql_data(data_type):
                     "ipa_version": n[5],
                     "enabled": n[6],
                     "exclude_reboots": n[7],
+                    "clientip": n[8],
                 } for n in db.fetchall()
             }
 
@@ -258,6 +275,7 @@ def status_all(request):
 
 if __name__ == '__main__':
     app_config = yaml.safe_load(open("config.yml"))
+    init_check()
     last_api_check = int(time.time())
 
     with Configurator() as config:

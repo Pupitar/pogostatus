@@ -43,6 +43,7 @@ rdm_database:
   user: device_status
   password: mysecretpassword
   name: rdm
+  connect_timeout: 5
 
 lorg_database:
   enabled: false
@@ -50,9 +51,11 @@ lorg_database:
   user: xxxx
   password: xxxx
   name: xxxx
+  connect_timeout: 5
 
 dcm_database:
   host: 127.0.0.1
   user: device_status
   password: mysecretpassword
   name: dcm
+  connect_timeout: 5
