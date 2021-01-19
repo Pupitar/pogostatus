@@ -133,6 +133,10 @@ def get_pub_data(hidden=False):
 
         output[device_name] = device_data
         output[device_name]["instance_name"] = instance_name
+        output[device_name]["always_ok"] = bool(any([
+            device_data["instance_name"].startswith(i)
+            for i in app_config.get("always_ok_status", [])
+        ]))
 
     return output
 

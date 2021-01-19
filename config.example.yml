@@ -35,6 +35,8 @@ ignore:
 device_name_overwrite:
   - ["dev", "Scanner #"]
 
+always_ok_status:
+
 instance_name_overwrite:
 
 rdm_database:
