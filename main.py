@@ -122,6 +122,8 @@ def get_pub_data(hidden=False):
 
     if not hidden:
         for device_name in list(tmp_data.keys()):
+            if not tmp_data[device_name]["instance_name"]:
+                continue
             if not is_hidden(device_name, tmp_data[device_name]["instance_name"]):
                 output[device_name] = tmp_data[device_name]
         tmp_data = output
