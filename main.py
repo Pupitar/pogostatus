@@ -83,7 +83,7 @@ def not_found(request):
 
 
 def is_hidden(device_name, instance_name):
-    return app_config["ignore"]["hidden_device_pattern"] and any([
+    return not instance_name or app_config["ignore"]["hidden_device_pattern"] and any([
         device_name.startswith(hidden_device)
         for hidden_device
         in app_config["ignore"]["hidden_device_pattern"]
@@ -100,18 +100,18 @@ def init_check():
     dcm_version = int(db.fetch_row()[0])
 
     if required_dcm_db > dcm_version:
-        log.error(f"Supported DCM db schema: {required_dcm_db}")
+        print(f"Supported DCM db schema: {required_dcm_db}")
         sys.exit(1)
 
 
 def name_overwrite(device_name, instance_name):
     if app_config["device_name_overwrite"]:
         for origin, target in app_config["device_name_overwrite"]:
-            device_name = device_name.replace(origin, target)
+            device_name = (device_name or "").replace(origin, target)
 
     if app_config["instance_name_overwrite"]:
         for origin, target in app_config["instance_name_overwrite"]:
-            instance_name = instance_name.replace(origin, target)
+            instance_name = (instance_name or "").replace(origin, target)
 
     return device_name, instance_name
 
@@ -122,8 +122,6 @@ def get_pub_data(hidden=False):
 
     if not hidden:
         for device_name in list(tmp_data.keys()):
-            if not tmp_data[device_name]["instance_name"]:
-                continue
             if not is_hidden(device_name, tmp_data[device_name]["instance_name"]):
                 output[device_name] = tmp_data[device_name]
         tmp_data = output
