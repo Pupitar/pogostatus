@@ -4,8 +4,6 @@ import sys
 import time
 import yaml
 from pyramid.config import Configurator
-from pyramid.renderers import render_to_response
-from pyramid.response import Response
 from pyramid.view import view_config, forbidden_view_config, notfound_view_config
 from threading import Lock
 from wsgiref.simple_server import make_server
@@ -57,6 +55,9 @@ class PokeDB:
         )
         self.cursor = self.con.cursor()
 
+    def __del__(self):
+        self.close()
+
     def execute(self, query):
         self.cursor.execute(query)
 
@@ -67,7 +68,8 @@ class PokeDB:
         return self.cursor.fetchone()
 
     def close(self):
-        self.con.close()
+        if self.con:
+            self.con.close()
 
 
 @forbidden_view_config(renderer='json')
