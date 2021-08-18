@@ -1,4 +1,4 @@
-PyYAML==5.3.1
+PyYAML>=5.4
 mysqlclient==2.0.1
 pyramid==1.10.5
 pyramid-jinja2==2.8
