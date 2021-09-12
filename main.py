@@ -55,9 +55,6 @@ class PokeDB:
         )
         self.cursor = self.con.cursor()
 
-    def __del__(self):
-        self.close()
-
     def execute(self, query):
         self.cursor.execute(query)
 
@@ -100,6 +97,7 @@ def init_check():
     db = PokeDB("dcm_database")
     db.execute("SELECT `value` FROM `metadata` WHERE `key` = 'DB_VERSION';")
     dcm_version = int(db.fetch_row()[0])
+    db.close()
 
     if required_dcm_db > dcm_version:
         print(f"Supported DCM db schema: {required_dcm_db}")
@@ -223,7 +221,9 @@ def api(request):
     if api_key != app_config["app"]["api_key"]:
         raise exc.HTTPForbidden()
 
-    request.registry.api_check_timer.set_now()
+    if not request.GET.get("skip_timer"):
+        request.registry.api_check_timer.set_now()
+
     rdm_status_dict, lorg_status_dict = None, None
 
     # main query
@@ -238,14 +238,44 @@ def api(request):
     output_dict = {"devices": {}, "status": False}
 
     for device_name, device_data in dcm_status_dict.items():
-        # hmm... there could be cooldown after swapping accounts between backends - keep in mind
+        in_backend = False
+        last_seen_backend = 0
+
         if rdm_status_dict and device_name in rdm_status_dict.keys():
+            in_backend = True
             output_dict["devices"][device_name] = dict(device_data, **rdm_status_dict[device_name])
             output_dict["devices"][device_name]["source"] = 1
+            last_seen_backend = output_dict["devices"][device_name]["last_seen"]
 
-        elif lorg_status_dict and device_name in lorg_status_dict.keys():
-            output_dict["devices"][device_name] = dict(device_data, **lorg_status_dict[device_name])
-            output_dict["devices"][device_name]["source"] = 2
+        # overwrite if needed
+        if lorg_status_dict and device_name in lorg_status_dict.keys():
+            in_backend = True
+            if (
+                device_name in output_dict and
+                output_dict[device_name]["last_seen"] > output_dict["devices"][device_name]["last_seen"]
+                or device_name not in output_dict
+            ):
+                output_dict["devices"][device_name] = dict(device_data, **lorg_status_dict[device_name])
+                output_dict["devices"][device_name]["source"] = 2
+                last_seen_backend = output_dict["devices"][device_name]["last_seen"]
+
+        if not in_backend:
+            output_dict["devices"][device_name] = dict(device_data, **{
+                "last_seen_from_now": device_data["dcm_heartbeat_from_now"],
+                "last_seen": device_data["dcm_heartbeat"],
+                "instance_name": 'No Backend'
+            })
+            output_dict["devices"][device_name]["source"] = 0
+
+        # add new key uuid with device name
+        output_dict["devices"][device_name]["uuid"] = device_name
+
+        # if heartbeat > backend last seen ; replace
+        if output_dict["devices"][device_name]["dcm_heartbeat"] > last_seen_backend:
+            output_dict["devices"][device_name] = dict(device_data, **{
+                "last_seen_from_now": device_data["dcm_heartbeat_from_now"],
+                "last_seen": device_data["dcm_heartbeat"]
+            })
 
     if output_dict["devices"]:
         output_dict["status"] = True
