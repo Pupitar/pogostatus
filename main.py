@@ -177,6 +177,7 @@ def fetch_sql_data(data_type):
                 SELECT
                     uuid, UNIX_TIMESTAMP() - last_seen, last_seen, instance_name
                 FROM device
+                WHERE last_seen != 0
                 ORDER BY `uuid` ASC
             """)
 
