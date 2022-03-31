@@ -272,7 +272,7 @@ def api(request):
         output_dict["devices"][device_name]["uuid"] = device_name
 
         # if heartbeat > backend last seen ; replace
-        if output_dict["devices"][device_name]["dcm_heartbeat"] > last_seen_backend:
+        if output_dict["devices"][device_name]["dcm_heartbeat"] < last_seen_backend:
             output_dict["devices"][device_name] = dict(device_data, **{
                 "last_seen_from_now": device_data["dcm_heartbeat_from_now"],
                 "last_seen": device_data["dcm_heartbeat"]
